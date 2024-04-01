@@ -70,7 +70,13 @@ const style = (start: Date, end: Date) => {
         : 'success'
 }
 
-const activities = [
+const {
+    data: timeLines,
+} = await useFetch('api/getTimeLine')
+
+
+
+const activities = /*[
     {
         content: '登記參選',
         start: new Date(2023, 4, 1),
@@ -133,5 +139,5 @@ const activities = [
         finish: new Date(2023, 5, 14),
         maybe: false,
     },
-]
+]*/
 </script>
