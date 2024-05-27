@@ -125,12 +125,28 @@
             >
               <span class="font-bold">新增選項</span>
             </ElButton>
+            <div v-if = "addVote.id === undefined">
             <ElButton
               type="primary"
               @click="submitForm(formRef)"
             >
               <span class="font-bold">創 建</span>
             </ElButton>
+            </div>
+            <div v-else>
+            <ElButton
+              type="primary"
+              @click="clearForm()"
+            >
+              <span class="font-bold">取 消</span>
+            </ElButton>
+            <ElButton
+              type="primary"
+              @click="updateForm(formRef)"
+            >
+              <span class="font-bold">更 新</span>
+            </ElButton>
+            </div>
           </ElSpace>
         </ElFormItem>
       </ElForm>
@@ -239,6 +255,23 @@
                     </ElButton>
                   </template>
                 </ElPopconfirm>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn
+              v-if="showOption"
+              label="編輯"
+              class="min-w-fit"
+              align="center"
+            >
+              <template #default="{ row }">
+                  <ElButton
+                    size="small"
+                    type="primary"
+                    :disabled="Date.now() >= new Date(row.startTime).getTime()"
+                    @click="editVoting(row.id)"
+                  >
+                    <span class="font-bold">編 輯</span>
+                  </ElButton>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -395,6 +428,7 @@ interface Candidate {
 }
 
 const addVote = reactive<{
+  id: number | undefined;
   voteName: string;
   voteGroup: number | undefined;
   startTime: string;
@@ -402,6 +436,7 @@ const addVote = reactive<{
   onlyOne: boolean;
   candidates: Candidate[];
 }>({
+  id: undefined,
   voteName: "",
   voteGroup: undefined,
   startTime: "",
@@ -555,4 +590,57 @@ const handleLoginReset = async () => {
       ElMessage.warning("超級管理員才可以重置");
     });
 };
+
+const editVoting = async (id: number) => {
+  const votingData = await $fetch('/api/voting/getOne', {
+    query: {id : id.toString()},
+  });
+  if(!votingData) {
+    return;
+  }
+  addVote.id = votingData.id;
+  addVote.voteName = votingData.name;
+  addVote.voteGroup = votingData.groupId;
+  addVote.startTime = votingData.startTime;
+  addVote.endTime = votingData.endTime;
+  addVote.onlyOne = votingData.onlyOne;
+  addVote.candidates = votingData.candidates.filter((item) => item.name !== "廢票" && item.name !== "同意" && item.name !== "不同意");
+  formRef.value?.scrollToField("voteName");
+};
+
+const updateForm = async (formRef: FormInstance | undefined) => {
+  if (!formRef) return;
+
+  await formRef.validate(async (valid, _fields) => {
+    if (valid) {
+      await $fetch("/api/voting/update", {
+        method: "POST",
+        body: JSON.stringify(addVote),
+      })
+        .then(async () => {
+          ElMessage.success("更新成功");
+          await votingRefresh();
+        })
+        .catch(() => {
+          ElMessage.error("更新失敗");
+        })
+        .finally(() => {
+          clearForm();
+        });
+    }
+  });
+};
+
+const clearForm = () => {
+  formRef.value?.resetFields();
+  addVote.id = undefined;
+  addVote.voteName = "";
+  addVote.voteGroup = undefined;
+  addVote.startTime = "";
+  addVote.endTime = "";
+  addVote.onlyOne = false;
+  addVote.candidates = [{ name: "" }, { name: "" }];
+};
+
+
 </script>
