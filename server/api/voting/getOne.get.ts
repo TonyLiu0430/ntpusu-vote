@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
 
     const votingId = parseInt(votingIdStr)
 
-    if(!votingId || isNaN(votingId)){
+    if(isNaN(votingId)){
         throw createError({
             statusCode: 400,
             statusMessage: 'Bad Request',
